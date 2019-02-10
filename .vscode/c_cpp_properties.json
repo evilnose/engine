@@ -4,8 +4,7 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/main/deps/glew-2.1.0/include/",
-                "${workspaceFolder}/main/deps/glfw-3.2.1/include/*"
+                "C:/SFML-2.5.1/include"
             ],
             "defines": [
                 "_DEBUG",

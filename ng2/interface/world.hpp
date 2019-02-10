@@ -1,44 +1,27 @@
-#ifndef NG2_SCENE_H
-#define NG2_SCENE_H
+#ifndef NG2_WORLD_HPP
+#define NG2_WORLD_HPP
 
 #include "../collision/object.hpp"
 #include <list>
 
 namespace ng2 {
-    struct SceneState {
-        const std::list<Object> *objects;
-    };
 
-    class Scene {
+    class World {
     public:
-        Scene();
+        const phys_t& global_gravity;
 
-        void start();
+        World();
+        ~World(); // TODO
 
-        void stop();
+        void add_object(std::shared_ptr<Object> pobj);
 
-        void add_object(Object obj);
+        void step(phys_t dt);
 
-        // EVENT HANDLERS
-        // called when the scene starts running
-        void (*hd_init)(SceneState);
-
-        // called when rendering the graphics
-        void (*hd_render)(SceneState, float);
-
-        // called before each physics update
-        void (*hd_fixed_update)(SceneState);
-        //TODO
-        //stopping scene
-        //resetting scene
-        //stepping  
+        void set_global_gravity(phys_t val);
     private:
-        std::list<Object> objects;
-        SceneState state;
-        bool running;
-
-        void physics_update();
-
+        std::list<std::shared_ptr<Object>> objects;
+        phys_t global_gravity_;
+        ng2::Vec2 grav_accel;
     };
 } // namespace ng2
 

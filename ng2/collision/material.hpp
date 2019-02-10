@@ -1,21 +1,24 @@
-#ifndef NG2_MATERIAL_H
-#define NG2_MATERIAL_H
+#ifndef NG2_MATERIAL_HPP
+#define NG2_MATERIAL_HPP
 
 #include "math2d.hpp"
 
-namespace ng2 {
-    struct Material {
-        phys_t density;
-        phys_t restitution;
-    };
+namespace ng2
+{
+struct Material
+{
+    phys_t density;
+    phys_t restitution;
+};
 
-   namespace mat {
-       Material ROCK{0.6, 0.1};
-       Material WOOD{0.3, 0.2};
-       Material METAL{1.2, 0.05};
-       Material BOUNCY_BALL{0.3, 0.8};
-       Material PILLOW{0.1, 0.2};
-   }
+namespace mat
+{
+static const Material ROCK{0.6, 0.1};
+static const Material WOOD{0.3, 0.2};
+static const Material METAL{1.2, 0.05};
+static const Material BOUNCY_BALL{0.3, 0.8};
+static const Material PILLOW{0.1, 0.2};
+} // namespace mat
 } // namespace ng2
 
 #endif

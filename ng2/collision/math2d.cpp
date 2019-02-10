@@ -1,6 +1,11 @@
 #include "math2d.hpp"
 #include <cmath>
-#include <algorithm>
+
+ng2::Vec2::Vec2(const Vec2& u)
+{
+    x = u.x;
+    y = u.y;
+}
 
 ng2::Vec2 ng2::operator*(const ng2::Vec2 &u, phys_t n)
 {
@@ -18,7 +23,7 @@ ng2::Vec2 &ng2::Vec2::operator*=(phys_t n)
     return *this;
 }
 
-bool ng2::Vec2::operator==(const Vec2& u)
+bool ng2::Vec2::operator==(const Vec2& u) const
 {
     return (x == u.x && y == u.y);
 }
@@ -62,21 +67,22 @@ ng2::Vec2 ng2::Vec2::operator-(void) const
 
 ng2::Vec2 &ng2::Vec2::operator-=(const Vec2 &v)
 {
-    x -= v.x, y -= v.y;
+    x -= v.x;
+    y -= v.y;
     return *this;
 }
 
-ng2::phys_t ng2::Vec2::dot(const ng2::Vec2& u)
+ng2::phys_t ng2::Vec2::dot(const ng2::Vec2& u) const
 {
     return x * u.x + y * u.y;
 }
 
-ng2::phys_t ng2::Vec2::len_sq()
+ng2::phys_t ng2::Vec2::len_sq() const
 {
     return x * x + y * y;
 }
 
-ng2::phys_t ng2::Vec2::len()
+ng2::phys_t ng2::Vec2::len() const
 {
     return (phys_t) sqrt(len_sq());
 }
@@ -89,9 +95,4 @@ ng2::phys_t ng2::dist_sq(Vec2 u, Vec2 v)
 ng2::phys_t ng2::dist(Vec2 u, Vec2 v)
 {
     return sqrt(dist_sq(u, v));
-}
-
-template <typename T>
-T ng2::clip(const T& n, const T& lower, const T& upper) {
-  return std::max(lower, std::min(n, upper));
 }

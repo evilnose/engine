@@ -1,31 +1,32 @@
-#ifndef NG2_OBJECT_H
-#define NG2_OBJECT_H
+#ifndef NG2_OBJECT_HPP
+#define NG2_OBJECT_HPP
 
 #include <stdexcept>
+#include <memory>
 
 #include "math2d.hpp"
 #include "state.hpp"
 #include "material.hpp"
+#include "collider.hpp"
 
 namespace ng2
 {
-class Collider; // definition below; grouped with subclasses
-
 struct Transform
 {
     Vec2 position;
-    Vec2 ang_position;
+    phys_t ang_position;
 };
 
 class Object
 {
   public:
-    Object(id_t, Collider&, const Material&);
+    Object(id_t id, std::shared_ptr<Collider> pcollider, const Material& mat, phys_t mass=1.f, int layers=1, phys_t grav_scale=1.f);
+    ~Object();
 
     const id_t id;
 
     // properties
-    Collider& collider; // TODO should be const ref once generic colliders are done
+    std::shared_ptr<Collider> pcollider; // TODO should be const once generic collider are done
     const Material& material;
     phys_t grav_scale; // 1.0 for normal gravity
     int layers;
@@ -36,8 +37,15 @@ class Object
     Transform tf;
     Vec2 velocity;
     Vec2 force;
+    phys_t ang_velocity;
+
+    // apply to object an impulse j, changing it velocity
+    void apply_impulse(Vec2 j);
+
+    // void apply_torque();
 
     void update_collider();
+    
     void set_mass(phys_t value);
 
   private:
@@ -45,31 +53,25 @@ class Object
     phys_t _mass_inv;
 };
 
-// TODO no longer needed once generic collision detection
-// algorithm is implemented. Remove then.
-enum ColliderType {
-    AABB_T,
-    CIRCLE_T
-};
+// struct Collider {
+//     ColliderType type;
+// };
 
-struct Collider {
-    ColliderType type;
-};
+// struct AABB : public Collider
+// {
+//     AABB(phys_t w, phys_t h);
+//     phys_t width;
+//     phys_t height;
+//     Vec2 min;
+//     Vec2 max;
+// };
 
-struct AABB : public Collider
-{
-    AABB(phys_t h, phys_t w);
-    phys_t height;
-    phys_t width;
-    Vec2 min;
-    Vec2 max;
-};
+// struct CircleCollider : public Collider
+// {
+//     CircleCollider(phys_t r);
+//     phys_t r; // radius
+// };
 
-struct CircleCollider : public Collider
-{
-    CircleCollider(phys_t r);
-    phys_t r; // radius
-};
 
 struct Manifold
 {
