@@ -14,7 +14,9 @@ namespace ng2
             virtual void update_collider(phys_t new_ang) override;
 
             // get points in clockwise order TODO remove
-            const std::vector<Vec2>& get_vertices();
+            const std::vector<Vec2>& get_rotated_vertices() const;
+
+            const std::vector<Vec2>& get_rotated_normals() const;
 
             unsigned int nvertices() const;
 
@@ -22,10 +24,15 @@ namespace ng2
 
         private:
             Vec2 com;
-            // vertices in given orientation. sorted cw
+            // vertices in given orientation. sorted counter-clockwise
             std::vector<Vec2> vertices;
+
+            std::vector<Vec2> normals;
+
             // vertices rotated by angle given by last update_collider()
             std::vector<Vec2> rotated_vertices;
+
+            std::vector<Vec2> rotated_normals;
             phys_t angular_pos;
 
             void sort_vertices(std::vector<Vec2>& vertices);

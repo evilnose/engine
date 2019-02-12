@@ -1,3 +1,4 @@
+#include <iostream>
 #include "basicRoutine.hpp"
 #include "../../ng2/collider/polygon.hpp"
 #include "../../ng2/collision/math2d.hpp"
@@ -27,11 +28,13 @@ ng2::BasicRoutine::BasicRoutine(World &wd, phys_t w, phys_t h, Vec2 s) : Routine
 //     circle_list.emplace_back(o);
 // }
 
-std::shared_ptr<ng2::Object> ng2::BasicRoutine::add_polygon(const std::vector<Vec2>& points, Vec2 init_pos, phys_t init_angpos, bool sorted_clockwise)
+std::shared_ptr<ng2::Object> ng2::BasicRoutine::add_polygon(
+    const std::vector<Vec2>& points, Vec2 init_pos, phys_t init_angpos, bool sorted_clockwise)
 {
     std::shared_ptr<Polygon> pcol(new Polygon(points, sorted_clockwise, init_angpos));
     std::shared_ptr<Object> pobj(new Object(last_id++, pcol, mat::ROCK));
     pobj->tf.position = init_pos;
+    pobj->tf.ang_position = init_angpos;
     pobj->pcollider = pcol;
     world.add_object(pobj);
     polygon_list.emplace_back(pobj);
@@ -84,11 +87,15 @@ void ng2::BasicRoutine::render_update(phys_t alpha) {
         }
         poly.setOutlineColor(prmycolor);
         poly.setOutlineThickness(2);
-        poly.setPosition(x_norm(o->tf.position.x), y_norm(o->tf.position.y));
+        Vec2 norm_pos = normalize_point(o->tf.position);
+        poly.setPosition(norm_pos.x, norm_pos.y);
 
         sf::CircleShape circle(2); // center of mass
         circle.setFillColor(prmycolor);
-        circle.setPosition(x_norm(o->tf.position.x), y_norm(o->tf.position.y));
+        circle.setPosition(norm_pos.x, norm_pos.y);
+
+        // draw normals to debug
+        draw_normals(collider.get_rotated_normals());        
 
         window.draw(poly);
         window.draw(circle);
@@ -105,12 +112,39 @@ void ng2::BasicRoutine::render_update(phys_t alpha) {
     window.display();
 }
 
-float ng2::BasicRoutine::x_norm(float x)
+void ng2::BasicRoutine::draw_vector(const Vec2& origin, const Vec2& vec,
+    const sf::Color& c_origin, const sf::Color& c_end)
 {
-    return scale.x * x;
+    sf::Vertex line[] =
+    {
+        sf::Vertex(vec2ToVector2f(origin), c_origin),
+        sf::Vertex(vec2ToVector2f(origin + vec), c_end)
+    };
+    window.draw(line, 2, sf::Lines);
 }
 
-float ng2::BasicRoutine::y_norm(float y)
+void ng2::BasicRoutine::draw_normals(const std::vector<Vec2>& normals)
 {
-    return scale.y * (height - y);
+    const Vec2 origin = normalize_point(Vec2{100.f, 100.f});
+    for (const auto& normal : normals)
+    {
+        draw_vector(origin, normalize_vec(normal));
+    }
+}
+
+// normalize a 2d point
+ng2::Vec2 ng2::BasicRoutine::normalize_point(Vec2 pt) const 
+{
+    return Vec2{pt.x * scale.x, (height - pt.y) * scale.y};
+}
+
+    // normalize a 2d vector
+ng2::Vec2 ng2::BasicRoutine::normalize_vec(Vec2 vec) const 
+{
+    return Vec2{vec.x * scale.x, -vec.y * scale.y};
+}
+
+sf::Vector2f ng2::BasicRoutine::vec2ToVector2f(const Vec2& vec) const
+{
+    return sf::Vector2f(vec.x, vec.y);
 }
