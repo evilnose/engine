@@ -1,7 +1,7 @@
 #include "object.hpp"
 #include <iostream>
 
-ng2::Object::Object(id_t id, std::shared_ptr<Collider> col, const Material &mat, phys_t m, int lyrs, phys_t gscale) : id(id), pcollider(col),
+ng2::Object::Object(id_t id, colptr col, const Material &mat, phys_t m, int lyrs, phys_t gscale) : id(id), pcollider(col),
                                                                                    material(mat), layers(lyrs), grav_scale(gscale)
                                                                                 
 {

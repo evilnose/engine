@@ -14,7 +14,7 @@ class BasicRoutine : public Routine
     BasicRoutine(World& world, phys_t width, phys_t height, Vec2 scale);
     // note that size should be {width, height}
     // TODO add variadic overload
-    std::shared_ptr<Object> add_polygon(const std::vector<Vec2>& points,
+    ng2::objptr add_polygon(const std::vector<Vec2>& points,
       Vec2 init_pos=Vec2{0.f, 0.f}, phys_t init_angpos=0, bool sorted_clockwise=false);
     void generate_polygon(const Vec2& init_pos);
     void add_circle(phys_t r, Vec2 init_pos = Vec2{0.f, 0.f}, Vec2 init_vel = Vec2{0.f, 0.f});
@@ -24,8 +24,8 @@ class BasicRoutine : public Routine
     float height;
     Vec2 scale;
 
-    std::list<std::shared_ptr<Object>> polygon_list;
-    // std::list<std::shared_ptr<Object>> circle_list;
+    std::list<ng2::objptr> polygon_list;
+    // std::list<ng2::objptr> circle_list;
 
     id_t last_id;
 

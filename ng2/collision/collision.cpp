@@ -1,10 +1,11 @@
-#include "collision.hpp"
 #include <cmath>
 #include <utility>
 #include <set>
 #include <algorithm>
 #include <iostream>
 #include "math2d.hpp"
+#include "collision.hpp"
+#include "../collider/polygon.hpp"
 
 #define POS_CORRECTION_RATIO 0.2
 #define POS_CORRECTION_SLOP 0.01
@@ -108,45 +109,72 @@
 //     m.penetration = (phys_t)(b.r - sqrt(dsq));
 //     return true;
 // }
-void ng2::detect_collision(const Manifold &m)
+
+// find points of b that are in a
+bool ng2::objects_collide(const Object& oa, const Object& ob)
 {
-    if (m.a.pcollider->ctype == POLYGON && m.a.pcollider->ctype == POLYGON)
+
+    if (oa.pcollider->ctype == POLYGON && ob.pcollider->ctype == POLYGON)
     {
-        
+        auto acol = (const Polygon&) *oa.pcollider;
+        auto bcol = (const Polygon&) *ob.pcollider;
+
+        phys_t best_comp = 1; // negative comp with smallest magnitude
+        int best_support;
+        for (unsigned int i = 0; i < acol.n_vertices(); i++)
+        {
+            static phys_t comp;
+            const Vec2& normal = acol.normal_at(i);
+            int support = bcol.get_support(-normal); 
+            // printf("%f, %f\n", temp.x, temp.y);
+            comp = normal.dot((bcol.vertex_at(support) + ob.tf.position) -
+                (acol.vertex_at(i) + oa.tf.position));
+
+            if (comp > 1e-7)
+            {
+                return false;
+            }
+            if (comp < best_comp)
+            {
+                best_comp = comp;
+                best_support = support;
+            }
+        }
+        return true;
     }
     else
     {
         std::cerr << "Collider Types currently not supported." << std::endl;
-    }
-    
-}
-
-void ng2::resolve_collision(const Manifold &m)
-{
-    Vec2 n = m.normal;
-    phys_t e = std::min(m.a.material.restitution, m.b.material.restitution);
-    phys_t rel_v = (m.b.velocity - m.a.velocity).dot(n);
-    if (rel_v > 0)
-        return; // a and b are already moving apart
-    phys_t j = -(1 + e) * ((m.b.velocity - m.a.velocity).dot(n)) /
-               (m.a.mass_inv + m.b.mass_inv); // solve for impulse scalar
-    Vec2 impulse = n * j;
-    m.a.velocity -= impulse * m.a.mass_inv;
-    m.b.velocity += impulse * m.b.mass_inv;
-}
-
-void ng2::positional_correction(Manifold &m)
-{
-    if ((m.penetration -= POS_CORRECTION_SLOP) > 0)
-    {
-        Vec2 corr = m.penetration / (m.a.mass_inv + m.b.mass_inv) *
-                    POS_CORRECTION_RATIO * m.normal;
-        m.a.tf.position += m.a.mass_inv * corr;
-        m.b.tf.position += m.b.mass_inv * corr;
+        return false;
     }
 }
 
-void ng2::generate_pairs(const std::list<obj_ptr> &bodies, std::list<objp_pair> &pairs)
+void ng2::resolve_collision(const ColState &state)
+{
+    // Vec2 n = m.normal;
+    // phys_t e = std::min(m.a.material.restitution, m.b.material.restitution);
+    // phys_t rel_v = (m.b.velocity - m.a.velocity).dot(n);
+    // if (rel_v > 0)
+    //     return; // a and b are already moving apart
+    // phys_t j = -(1 + e) * ((m.b.velocity - m.a.velocity).dot(n)) /
+    //            (m.a.mass_inv + m.b.mass_inv); // solve for impulse scalar
+    // Vec2 impulse = n * j;
+    // m.a.velocity -= impulse * m.a.mass_inv;
+    // m.b.velocity += impulse * m.b.mass_inv;
+}
+
+void ng2::positional_correction(ColState& state)
+{
+    // if ((m.penetration -= POS_CORRECTION_SLOP) > 0)
+    // {
+    //     Vec2 corr = m.penetration / (m.a.mass_inv + m.b.mass_inv) *
+    //                 POS_CORRECTION_RATIO * m.normal;
+    //     m.a.tf.position += m.a.mass_inv * corr;
+    //     m.b.tf.position += m.b.mass_inv * corr;
+    // }
+}
+
+void ng2::generate_pairs(const std::list<objptr> &bodies, std::list<objp_pair> &pairs)
 {
     pairs.clear();
 

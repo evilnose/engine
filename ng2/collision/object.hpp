@@ -11,46 +11,49 @@
 
 namespace ng2
 {
+class Object;
+typedef std::shared_ptr<Object> objptr;
+typedef std::shared_ptr<Collider> colptr;
 struct Transform
 {
-    Vec2 position;
-    phys_t ang_position;
+  Vec2 position;
+  phys_t ang_position;
 };
 
 class Object
 {
-  public:
-    Object(id_t id, std::shared_ptr<Collider> pcollider, const Material& mat, phys_t mass=1.f, int layers=1, phys_t grav_scale=1.f);
-    ~Object();
+public:
+  Object(id_t id, colptr pcollider, const Material &mat, phys_t mass = 1.f, int layers = 1, phys_t grav_scale = 1.f);
+  ~Object();
 
-    const id_t id;
+  const id_t id;
 
-    // properties
-    std::shared_ptr<Collider> pcollider; // TODO should be const once generic collider are done
-    const Material& material;
-    phys_t grav_scale; // 1.0 for normal gravity
-    int layers;
-    const phys_t &mass = _mass;
-    const phys_t &mass_inv = _mass_inv;
+  // properties
+  colptr pcollider; // TODO should be const once generic collider are done
+  const Material &material;
+  phys_t grav_scale; // 1.0 for normal gravity
+  int layers;
+  const phys_t &mass = _mass;
+  const phys_t &mass_inv = _mass_inv;
 
-    // states
-    Transform tf;
-    Vec2 velocity;
-    Vec2 force;
-    phys_t ang_velocity;
+  // states
+  Transform tf;
+  Vec2 velocity;
+  Vec2 force;
+  phys_t ang_velocity;
 
-    // apply to object an impulse j, changing it velocity
-    void apply_impulse(Vec2 j);
+  // apply to object an impulse j, changing it velocity
+  void apply_impulse(Vec2 j);
 
-    // void apply_torque();
+  // void apply_torque();
 
-    void update_collider();
-    
-    void set_mass(phys_t value);
+  void update_collider();
 
-  private:
-    phys_t _mass;
-    phys_t _mass_inv;
+  void set_mass(phys_t value);
+
+private:
+  phys_t _mass;
+  phys_t _mass_inv;
 };
 
 // struct Collider {
@@ -72,13 +75,12 @@ class Object
 //     phys_t r; // radius
 // };
 
-
 struct Manifold
 {
-    Object &a;
-    Object &b;
-    phys_t penetration;
-    Vec2 normal;
+  Object &a;
+  Object &b;
+  phys_t penetration;
+  Vec2 normal;
 };
 } // namespace ng2
 

@@ -9,18 +9,19 @@ namespace ng2
     class Polygon : public Collider
     {
         public:
+            // TODO replace vectors with hidden unique_ptr arrays
             Polygon(const std::vector<Vec2>& vertices, bool sorted_clockwise=false, phys_t angular_pos=0.f);
 
             virtual void update_collider(phys_t new_ang) override;
 
-            // get points in clockwise order TODO remove
-            const std::vector<Vec2>& get_rotated_vertices() const;
-
-            const std::vector<Vec2>& get_rotated_normals() const;
-
-            unsigned int nvertices() const;
+            unsigned int n_vertices() const;
 
             const Vec2& vertex_at(unsigned int index) const;
+
+            const Vec2& normal_at(unsigned int index) const;
+
+            // return vertex *index* that is farthest along dir
+            int get_support(const Vec2& dir) const;
 
         private:
             Vec2 com;

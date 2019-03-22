@@ -12,7 +12,7 @@ ng2::World::~World()
     objects.clear(); // free object pointers
 }
 
-void ng2::World::add_object(obj_ptr pobj)
+void ng2::World::add_object(objptr pobj)
 {
     objects.emplace_back(pobj);
 }
@@ -33,16 +33,16 @@ void ng2::World::step(phys_t dt)
         // printf("%f, %f\n", obj.tf.position.x, obj.tf.position.y);
     }
 
-    // std::list<objp_pair> pairs;
-    // generate_pairs(objects, pairs);
+    std::list<objp_pair> pairs;
+    generate_pairs(objects, pairs);
 
-    // for (auto const &pair : pairs)
-    // {
-    //     Manifold m{*pair.first, *pair.second}; // leave the other two as default
-    //     AABBvAABB(m);
-    //     resolve_collision(m);
-    //     positional_correction(m);
-    // }
+    for (auto const &pair : pairs)
+    {
+        // ColState state = detect_collision(*pair.first, *pair.second);
+        // bool colliding = detect_collision(*pair.first, *pair.second) || detect_collision(*pair.second, *pair.first);
+        // resolve_collision(m);
+        // positional_correction(m);
+    }
 }
 
 void ng2::World::set_global_gravity(phys_t val)

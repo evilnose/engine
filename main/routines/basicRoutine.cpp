@@ -12,7 +12,7 @@ ng2::BasicRoutine::BasicRoutine(World &wd, phys_t w, phys_t h, Vec2 s) : Routine
 // void ng2::BasicRoutine::add_AABB(Vec2 size, Vec2 init_pos, Vec2 init_vel) {
 //     // TODO thread safety for last_id; maybe create a new class
 //     std::shared_ptr<AABB> pcollider(new AABB(size.x, size.y));
-//     std::shared_ptr<Object> o(new Object(last_id++, pcollider, mat::ROCK));
+//     ng2::objptr o(new Object(last_id++, pcollider, mat::ROCK));
 //     o->tf.position = init_pos;
 //     o->velocity = init_vel;
 //     world.add_object(o);
@@ -21,20 +21,22 @@ ng2::BasicRoutine::BasicRoutine(World &wd, phys_t w, phys_t h, Vec2 s) : Routine
 
 // void ng2::BasicRoutine::add_circle(phys_t radius, Vec2 init_pos, Vec2 init_vel) {
 //     std::shared_ptr<CircleCollider> pcollider(new CircleCollider(radius));
-//     std::shared_ptr<Object> o(new Object(last_id++, pcollider, mat::ROCK));
+//     ng2::objptr o(new Object(last_id++, pcollider, mat::ROCK));
 //     o->tf.position = init_pos;
 //     o->velocity = init_vel;
 //     world.add_object(o);
 //     circle_list.emplace_back(o);
 // }
 
-std::shared_ptr<ng2::Object> ng2::BasicRoutine::add_polygon(
+ng2::objptr ng2::BasicRoutine::add_polygon(
     const std::vector<Vec2>& points, Vec2 init_pos, phys_t init_angpos, bool sorted_clockwise)
 {
     std::shared_ptr<Polygon> pcol(new Polygon(points, sorted_clockwise, init_angpos));
-    std::shared_ptr<Object> pobj(new Object(last_id++, pcol, mat::ROCK));
+    ng2::objptr pobj(new Object(last_id++, pcol, mat::ROCK));
     pobj->tf.position = init_pos;
     pobj->tf.ang_position = init_angpos;
+    pobj->velocity = ng2::Vec2{0.f, 0.f};
+    pobj->ang_velocity = 0.f;
     pobj->pcollider = pcol;
     world.add_object(pobj);
     polygon_list.emplace_back(pobj);
@@ -72,12 +74,12 @@ void ng2::BasicRoutine::render_update(phys_t alpha) {
         }
     }
     window.clear(sf::Color::White);
-    for (const auto&o : polygon_list)
+    for (const ng2::objptr o : polygon_list)
     {
         const Polygon& collider = *std::static_pointer_cast<Polygon>(o->pcollider);
         
         sf::ConvexShape poly;
-        unsigned int sz = collider.nvertices();
+        unsigned int sz = collider.n_vertices();
         poly.setPointCount(sz);
         for (int i = 0; i < sz; i++)
         {
@@ -95,7 +97,7 @@ void ng2::BasicRoutine::render_update(phys_t alpha) {
         circle.setPosition(norm_pos.x, norm_pos.y);
 
         // draw normals to debug
-        draw_normals(collider.get_rotated_normals());        
+        // draw_normals(collider.get_normals();        
 
         window.draw(poly);
         window.draw(circle);
@@ -123,14 +125,14 @@ void ng2::BasicRoutine::draw_vector(const Vec2& origin, const Vec2& vec,
     window.draw(line, 2, sf::Lines);
 }
 
-void ng2::BasicRoutine::draw_normals(const std::vector<Vec2>& normals)
-{
-    const Vec2 origin = normalize_point(Vec2{100.f, 100.f});
-    for (const auto& normal : normals)
-    {
-        draw_vector(origin, normalize_vec(normal));
-    }
-}
+// void ng2::BasicRoutine::draw_normals(const std::vector<Vec2>& normals)
+// {
+//     const Vec2 origin = normalize_point(Vec2{100.f, 100.f});
+//     for (const auto& normal : normals)
+//     {
+//         draw_vector(origin, normalize_vec(normal));
+//     }
+// }
 
 // normalize a 2d point
 ng2::Vec2 ng2::BasicRoutine::normalize_point(Vec2 pt) const 
