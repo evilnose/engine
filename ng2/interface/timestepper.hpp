@@ -8,15 +8,15 @@ namespace ng2
 class TimeStepper
 {
   public:
-    TimeStepper(Routine &routine, int framerate, phys_t acum_cap=0.2f);
+    TimeStepper(Routine &routine, int framerate, real acum_cap=0.2f);
     void init();
     void loop_start();
     void loop_stop();
     bool& looping = in_loop;
 
     const int framerate;
-    const phys_t dt;
-    const phys_t acum_cap;
+    const real dt;
+    const real acum_cap;
   private:
     Routine& routine;
     bool in_loop;

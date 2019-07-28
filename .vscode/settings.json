@@ -57,6 +57,13 @@
         "chrono": "cpp",
         "ratio": "cpp",
         "cassert": "cpp",
-        "array": "cpp"
+        "array": "cpp",
+        "unordered_map": "cpp",
+        "string_view": "cpp",
+        "*.tcc": "cpp",
+        "cctype": "cpp",
+        "clocale": "cpp",
+        "cwctype": "cpp",
+        "optional": "cpp"
     }
 }

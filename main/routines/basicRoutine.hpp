@@ -11,20 +11,20 @@ namespace ng2
 class BasicRoutine : public Routine
 {
   public:
-    BasicRoutine(World& world, phys_t width, phys_t height, Vec2 scale);
+    BasicRoutine(World& world, real width, real height, Vec2 scale);
     // note that size should be {width, height}
     // TODO add variadic overload
     ng2::objptr add_polygon(const std::vector<Vec2>& points,
-      Vec2 init_pos=Vec2{0.f, 0.f}, phys_t init_angpos=0, bool sorted_clockwise=false);
+      Vec2 init_pos=Vec2{0.f, 0.f}, real init_angpos=0, bool sorted_clockwise=false);
     void generate_polygon(const Vec2& init_pos);
-    void add_circle(phys_t r, Vec2 init_pos = Vec2{0.f, 0.f}, Vec2 init_vel = Vec2{0.f, 0.f});
+    void add_circle(real r, Vec2 init_pos = Vec2{0.f, 0.f}, Vec2 init_vel = Vec2{0.f, 0.f});
 
   private:
     float width;
     float height;
     Vec2 scale;
 
-    std::list<ng2::objptr> polygon_list;
+    std::vector<ng2::objptr> polygon_list;
     // std::list<ng2::objptr> circle_list;
 
     id_t last_id;
@@ -36,7 +36,7 @@ class BasicRoutine : public Routine
     
     // not going to override physics update
     // virtual void physics_update() override;
-    virtual void render_update(phys_t alpha) override;
+    virtual void render_update(real alpha) override;
 
     void draw_vector(const Vec2& origin, const Vec2& vec, 
       const sf::Color& c_origin = sf::Color::Black, const sf::Color& c_end = sf::Color::Red);

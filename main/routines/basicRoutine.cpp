@@ -1,12 +1,13 @@
 #include <iostream>
 #include "basicRoutine.hpp"
-#include "../../ng2/collider/polygon.hpp"
+#include "../../ng2/collision/polygon.hpp"
 #include "../../ng2/collision/math2d.hpp"
 // #include "../../ng2/collision/material.hpp"
 
 #define FRAMERATE 60
 
-ng2::BasicRoutine::BasicRoutine(World &wd, phys_t w, phys_t h, Vec2 s) : Routine(wd), width(w), height(h), scale(s), last_id(0) {
+ng2::BasicRoutine::BasicRoutine(World &wd, real w, real h, Vec2 s) : Routine(wd), width(w), height(h), scale(s), last_id(0)
+{
 }
 
 // void ng2::BasicRoutine::add_AABB(Vec2 size, Vec2 init_pos, Vec2 init_vel) {
@@ -19,7 +20,7 @@ ng2::BasicRoutine::BasicRoutine(World &wd, phys_t w, phys_t h, Vec2 s) : Routine
 //     aabb_list.emplace_back(o);
 // }
 
-// void ng2::BasicRoutine::add_circle(phys_t radius, Vec2 init_pos, Vec2 init_vel) {
+// void ng2::BasicRoutine::add_circle(real radius, Vec2 init_pos, Vec2 init_vel) {
 //     std::shared_ptr<CircleCollider> pcollider(new CircleCollider(radius));
 //     ng2::objptr o(new Object(last_id++, pcollider, mat::ROCK));
 //     o->tf.position = init_pos;
@@ -29,7 +30,7 @@ ng2::BasicRoutine::BasicRoutine(World &wd, phys_t w, phys_t h, Vec2 s) : Routine
 // }
 
 ng2::objptr ng2::BasicRoutine::add_polygon(
-    const std::vector<Vec2>& points, Vec2 init_pos, phys_t init_angpos, bool sorted_clockwise)
+    const std::vector<Vec2> &points, Vec2 init_pos, real init_angpos, bool sorted_clockwise)
 {
     std::shared_ptr<Polygon> pcol(new Polygon(points, sorted_clockwise, init_angpos));
     ng2::objptr pobj(new Object(last_id++, pcol, mat::ROCK));
@@ -43,47 +44,50 @@ ng2::objptr ng2::BasicRoutine::add_polygon(
     return pobj;
 }
 
-
-void ng2::BasicRoutine::generate_polygon(const Vec2& init_pos)
+void ng2::BasicRoutine::generate_polygon(const Vec2 &init_pos)
 {
     //TODO
 }
 
-void ng2::BasicRoutine::init() {
-    window.create(sf::VideoMode((unsigned int) (width * scale.x), (unsigned int) (height * scale.y)),
-                  "ng2 Window (AxisAligned)");
+void ng2::BasicRoutine::init()
+{
+    window.create(sf::VideoMode((unsigned int)(width * scale.x), (unsigned int)(height * scale.y)),
+                  "ng2 Window -- Basic Routine");
     window.setFramerateLimit(FRAMERATE);
     window_focus = true;
 }
 
-void ng2::BasicRoutine::render_update(phys_t alpha) {
+void ng2::BasicRoutine::render_update(real alpha)
+{
     static const sf::Color prmycolor = sf::Color(66, 134, 244);
     sf::Event event;
-    while (window.pollEvent(event)) {
-        switch (event.type) {
-            case sf::Event::Closed:
-                stop();
-                window.close();
-                break;
-            case sf::Event::GainedFocus:
-                window_focus = true;
-                break;
-            case sf::Event::LostFocus:
-                window_focus = false;
-                break;
+    while (window.pollEvent(event))
+    {
+        switch (event.type)
+        {
+        case sf::Event::Closed:
+            stop();
+            window.close();
+            break;
+        case sf::Event::GainedFocus:
+            window_focus = true;
+            break;
+        case sf::Event::LostFocus:
+            window_focus = false;
+            break;
         }
     }
     window.clear(sf::Color::White);
     for (const ng2::objptr o : polygon_list)
     {
-        const Polygon& collider = *std::static_pointer_cast<Polygon>(o->pcollider);
-        
+        const Polygon &collider = *std::static_pointer_cast<Polygon>(o->pcollider);
+
         sf::ConvexShape poly;
         unsigned int sz = collider.n_vertices();
         poly.setPointCount(sz);
         for (int i = 0; i < sz; i++)
         {
-            const Vec2& vertex = collider.vertex_at(i);
+            const Vec2 &vertex = collider.vertex_at(i);
             sf::Vector2f pt(vertex.x * scale.x, -vertex.y * scale.y);
             poly.setPoint(i, pt);
         }
@@ -97,7 +101,7 @@ void ng2::BasicRoutine::render_update(phys_t alpha) {
         circle.setPosition(norm_pos.x, norm_pos.y);
 
         // draw normals to debug
-        // draw_normals(collider.get_normals();        
+        // draw_normals(collider.get_normals();
 
         window.draw(poly);
         window.draw(circle);
@@ -111,17 +115,17 @@ void ng2::BasicRoutine::render_update(phys_t alpha) {
     //     rect.setPosition(x_norm(o->tf.position.x), y_norm(o->tf.position.y));
     //     window.draw(rect);
     // }
+
     window.display();
 }
 
-void ng2::BasicRoutine::draw_vector(const Vec2& origin, const Vec2& vec,
-    const sf::Color& c_origin, const sf::Color& c_end)
+void ng2::BasicRoutine::draw_vector(const Vec2 &origin, const Vec2 &vec,
+                                    const sf::Color &c_origin, const sf::Color &c_end)
 {
     sf::Vertex line[] =
-    {
-        sf::Vertex(vec2ToVector2f(origin), c_origin),
-        sf::Vertex(vec2ToVector2f(origin + vec), c_end)
-    };
+        {
+            sf::Vertex(vec2ToVector2f(origin), c_origin),
+            sf::Vertex(vec2ToVector2f(origin + vec), c_end)};
     window.draw(line, 2, sf::Lines);
 }
 
@@ -135,18 +139,18 @@ void ng2::BasicRoutine::draw_vector(const Vec2& origin, const Vec2& vec,
 // }
 
 // normalize a 2d point
-ng2::Vec2 ng2::BasicRoutine::normalize_point(Vec2 pt) const 
+ng2::Vec2 ng2::BasicRoutine::normalize_point(Vec2 pt) const
 {
     return Vec2{pt.x * scale.x, (height - pt.y) * scale.y};
 }
 
-    // normalize a 2d vector
-ng2::Vec2 ng2::BasicRoutine::normalize_vec(Vec2 vec) const 
+// normalize a 2d vector
+ng2::Vec2 ng2::BasicRoutine::normalize_vec(Vec2 vec) const
 {
     return Vec2{vec.x * scale.x, -vec.y * scale.y};
 }
 
-sf::Vector2f ng2::BasicRoutine::vec2ToVector2f(const Vec2& vec) const
+sf::Vector2f ng2::BasicRoutine::vec2ToVector2f(const Vec2 &vec) const
 {
     return sf::Vector2f(vec.x, vec.y);
 }

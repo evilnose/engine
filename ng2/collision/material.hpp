@@ -7,8 +7,10 @@ namespace ng2
 {
 struct Material
 {
-    phys_t density;
-    phys_t restitution;
+    real density;
+    real restitution;
+    real mu_kinetic;
+    real mu_static;
 };
 
 namespace mat

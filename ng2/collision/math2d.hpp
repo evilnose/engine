@@ -5,16 +5,16 @@
 
 namespace ng2
 {
-typedef float phys_t;
+typedef float real;
 struct Vec2
 {
-    phys_t x;
-    phys_t y;
+    real x;
+    real y;
     Vec2() : x(0.f), y(0.f){};
-    Vec2(phys_t x, phys_t y) : x(x), y(y){};
+    Vec2(real x, real y) : x(x), y(y){};
     Vec2(const Vec2 &u);
-    Vec2 &operator*=(phys_t n);
-    Vec2 &operator/=(phys_t n);
+    Vec2 &operator*=(real n);
+    Vec2 &operator/=(real n);
     Vec2 operator+(const Vec2 &u) const;
     Vec2 &operator+=(const Vec2 &u);
     Vec2 operator-(const Vec2 &u) const;
@@ -22,16 +22,20 @@ struct Vec2
     Vec2 &operator-=(const Vec2 &u);
     bool operator==(const Vec2 &u) const;
 
-    phys_t dot(const Vec2 &u) const;
-    phys_t len_sq() const;
-    phys_t len() const;
+    real dot(const Vec2 &u) const;
+    real len_sq() const;
+    real len() const;
+    void normalize();
+    Vec2 normalized() const;
 };
-Vec2 operator*(const Vec2 &u, phys_t n);
-Vec2 operator*(phys_t n, const Vec2 &u);
-Vec2 operator/(const Vec2 &u, phys_t n);
-Vec2 operator/(phys_t n, const Vec2 &u);
-phys_t dist_sq(Vec2 u, Vec2 v);
-phys_t dist(Vec2 u, Vec2 v);
+Vec2 operator*(const Vec2 &u, real n);
+Vec2 operator*(real n, const Vec2 &u);
+Vec2 operator/(const Vec2 &u, real n);
+Vec2 operator/(real n, const Vec2 &u);
+real dist_sq(Vec2 u, Vec2 v);
+real dist(Vec2 u, Vec2 v);
+real determinant(Vec2 u, Vec2 v);
+Vec2 angular2tangential(const Vec2& u, real n);
 
 template <typename T>
 T clip(const T& n, const T& lower, const T& upper) {

@@ -14,7 +14,7 @@ class Collider
 {
   public:
     Collider(ColliderType ctype);
-    virtual void update_collider(phys_t angular_pos) = 0;
+    virtual void update_collider(real angular_pos) = 0;
     ColliderType ctype;
 };
 } // namespace ng2

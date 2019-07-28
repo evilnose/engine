@@ -11,13 +11,13 @@ ng2::Polygon::Polygon(const std::vector<Vec2> &vert, bool sorted_cw, float angpo
     if (!sorted_cw)
         sort_vertices(vertices);
 
-    phys_t area = 0.f;
+    real area = 0.f;
     unsigned int sz = vertices.size();
     for (int i = 0, j; i < sz; i++)
     {
         j = (i + 1) % sz; // loop around for last one
-        area += vertices.at(i).x * vertices.at(j).y -
-                vertices.at(j).x * vertices.at(i).y;
+        area += vertices[i].x * vertices[j].y -
+                vertices[j].x * vertices[i].y;
     }
     area /= 2.f;
     assert(area > 0);
@@ -25,10 +25,10 @@ ng2::Polygon::Polygon(const std::vector<Vec2> &vert, bool sorted_cw, float angpo
     for (int i = 0, j; i < sz; i++)
     {
         j = (i + 1) % sz; // loop around for last one
-        phys_t second_term = vertices.at(i).x * vertices.at(j).y -
-                             vertices.at(j).x * vertices.at(i).y;
-        com.x += (vertices.at(i).x + vertices.at(j).x) * second_term;
-        com.y += (vertices.at(i).y + vertices.at(j).y) * second_term;
+        real second_term = vertices[i].x * vertices[j].y -
+                             vertices[j].x * vertices[i].y;
+        com.x += (vertices[i].x + vertices[j].x) * second_term;
+        com.y += (vertices[i].y + vertices[j].y) * second_term;
     }
 
     com.x /= (6.f * area);
@@ -51,9 +51,9 @@ ng2::Polygon::Polygon(const std::vector<Vec2> &vert, bool sorted_cw, float angpo
     for (int i = 0, j; i < sz; i++)
     {
         j = (i + 1) % sz;
-        line = vertices.at(j) - vertices.at(i);
+        line = vertices[j] - vertices[i];
         // since points are sorted counter-clockwise
-        normals.emplace_back(Vec2{line.y, -line.x});
+        normals.emplace_back(Vec2{line.y, -line.x}.normalized());
     }
 
     // copy vertices/normals
@@ -73,12 +73,24 @@ unsigned int ng2::Polygon::n_vertices() const
 
 const ng2::Vec2 &ng2::Polygon::vertex_at(unsigned int index) const
 {
-    return rotated_vertices.at(index);
+    assert(index < rotated_vertices.size());
+    return rotated_vertices[index];
+}
+
+std::vector<ng2::Vec2>::const_iterator ng2::Polygon::normal_begin() const
+{
+    return rotated_normals.begin();
+}
+
+std::vector<ng2::Vec2>::const_iterator ng2::Polygon::normal_end() const
+{
+    return rotated_normals.end();
 }
 
 const ng2::Vec2 &ng2::Polygon::normal_at(unsigned int index) const
 {
-    return rotated_normals.at(index);
+    assert(index < rotated_normals.size());
+    return rotated_normals[index];
 }
 
 void ng2::Polygon::sort_vertices(std::vector<Vec2> &to_sort)
@@ -122,36 +134,36 @@ void ng2::Polygon::sort_vertices(std::vector<Vec2> &to_sort)
 
 int ng2::Polygon::get_support(const Vec2 &dir) const
 {
-    const auto cmp = [dir](const Vec2 &v1, const Vec2 &v2) { return dir.dot(v1) > dir.dot(v2); };
+    const auto cmp = [dir](const Vec2 &v1, const Vec2 &v2) { return dir.dot(v1) < dir.dot(v2); };
     const auto max_it = std::max_element(rotated_vertices.begin(),
                                          rotated_vertices.end(),
                                          cmp);
     return std::distance(rotated_vertices.begin(), max_it);
 }
 
-void ng2::Polygon::update_collider(phys_t new_ang)
+void ng2::Polygon::update_collider(real new_ang)
 {
     if (angular_pos == new_ang)
         return;
     angular_pos = new_ang;
 
     // make rotation matrix
-    phys_t sinval = sin(new_ang);
-    phys_t cosval = cos(new_ang);
+    real sinval = sin(new_ang);
+    real cosval = cos(new_ang);
     Vec2 xcol{cosval, sinval};
     Vec2 ycol{-sinval, cosval};
 
     for (unsigned int i = 0; i < vertices.size(); i++)
     {
         // update vertices
-        const Vec2 &v = vertices.at(i);
-        Vec2 &rv = rotated_vertices.at(i);
+        const Vec2 &v = vertices[i];
+        Vec2 &rv = rotated_vertices[i];
         rv.x = v.dot(xcol);
         rv.y = v.dot(ycol);
 
         // update normals
-        const Vec2 &n = normals.at(i);
-        Vec2 &rn = rotated_normals.at(i);
+        const Vec2 &n = normals[i];
+        Vec2 &rn = rotated_normals[i];
         rn.x = n.dot(xcol);
         rn.y = n.dot(ycol);
     }

@@ -3,195 +3,314 @@
 #include <set>
 #include <algorithm>
 #include <iostream>
+#include <cassert>
 #include "math2d.hpp"
 #include "collision.hpp"
-#include "../collider/polygon.hpp"
+#include "polygon.hpp"
 
-#define POS_CORRECTION_RATIO 0.2
-#define POS_CORRECTION_SLOP 0.01
+static constexpr ng2::real POS_CORRECTION_RATIO = 0.2;
+static constexpr ng2::real POS_CORRECTION_SLOP = 0.01;
+static constexpr ng2::real Y_EPSILON = 0.005; // completely arbitrary
+static constexpr ng2::real BIAS_FACTOR = 0.2;
+static constexpr ng2::real BIAS_SLOP = 0.1;
 
 //FUNCTIONS
 
-// returns true if a and b intersect, and false otherwise.
-// returns normal in the axis that takes least movement to un-overlap
-// bool ng2::AABBvAABB(Manifold &m)
-// {
-//     const AABB &a = *std::static_pointer_cast<AABB>(m.a.pcollider);
-//     const AABB &b = *std::static_pointer_cast<AABB>(m.b.pcollider);
-//     phys_t xpos = a.max.x - b.min.x; // try to move b to a right
-//     phys_t xneg = a.min.x - b.max.x; // try to move b to a left
-//     phys_t ypos = a.max.y - b.min.y;
-//     phys_t yneg = a.min.y - b.max.y;
-
-//     if (xpos <= 0 || xneg >= 0 || ypos <= 0 || yneg >= 0)
-//         return false;
-    
-
-//     // prefer positives when equal
-//     phys_t xdir = fabs(xpos) <= fabs(xneg) ? xpos : xneg;
-//     phys_t ydir = fabs(ypos) <= fabs(yneg) ? ypos : yneg;
-//     auto xabs = (phys_t)fabs(xdir), yabs = (phys_t)fabs(ydir);
-
-//     if (xabs <= yabs) // prefer x when equal
-//     {
-//         m.penetration = xabs;
-//         m.normal = Vec2{xdir, 0};
-//     }
-//     else
-//     {
-//         m.penetration = yabs;
-//         m.normal = Vec2{0, ydir};
-//     }
-
-//     return true;
-// }
-
-// // update manifold and return true if collide
-// bool ng2::CirclevCircle(Manifold &m)
-// {
-//     const CircleCollider &a = *std::static_pointer_cast<CircleCollider>(m.a.pcollider);
-//     const CircleCollider &b = *std::static_pointer_cast<CircleCollider>(m.b.pcollider);
-
-//     Vec2 n = m.a.tf.position - m.b.tf.position;
-//     phys_t r = a.r + b.r;
-
-//     phys_t d = n.len_sq(); // square of length b/c cheaper
-//     if (d > r * r)
-//         return false;
-
-//     if (d != 0)
-//     {
-//         d = (phys_t)sqrt(d); // take sqrt of d for penetration
-//         m.penetration = r - d;
-//         m.normal = n / d; // unit vec
-//     }
-//     else
-//     {
-//         // circles are in same position
-//         m.penetration = std::min(a.r, b.r);
-//         m.normal = Vec2{1, 0};
-//     }
-//     return true;
-// }
-
-// // NOTE m->a should be AABB* and m->b CircleCollider
-// bool ng2::AABBvCircle(Manifold &m)
-// {
-//     const AABB &a = *std::static_pointer_cast<AABB>(m.a.pcollider);
-//     const CircleCollider &b = *std::static_pointer_cast<CircleCollider>(m.b.pcollider);
-
-//     Vec2 ab = m.a.tf.position - Vec2{(a.min.x + a.max.x) / 2, (a.min.y + a.max.y) / 2};
-//     phys_t hwidth = (a.max.x - a.min.x) / 2;
-//     phys_t hheight = (a.max.y - a.min.y) / 2;
-
-//     Vec2 closest{clip(ab.x, -hwidth, hwidth), clip(ab.y, -hheight, hheight)};
-//     bool inside = (ab == closest);
-//     if (inside)
-//     {
-//         // move to closest edge instead
-//         if (hwidth - fabs(ab.x) <= hheight - fabs(ab.y))
-//             // closer to x
-//             closest.x = (closest.x >= 0) * hwidth; // prefer right
-//         else
-//             closest.y = (closest.y >= 0) * hheight;
-//     }
-
-//     Vec2 normal = ab - closest;
-//     // dist from center of circle to closest pt on AABB squared
-//     phys_t dsq = normal.len_sq();
-//     if (!inside && pow(b.r, 2) > dsq)
-//         return false; // no collision
-
-//     if (inside)
-//         normal = -normal; // flip normal to move inside circle out
-
-//     m.normal = normal;
-//     m.penetration = (phys_t)(b.r - sqrt(dsq));
-//     return true;
-// }
-
-// find points of b that are in a
-bool ng2::objects_collide(const Object& oa, const Object& ob)
+void ng2::resolve_collisions(std::vector<objptr> &moveable_objects, std::vector<objptr> &fixed_objects, real dt)
 {
-
-    if (oa.pcollider->ctype == POLYGON && ob.pcollider->ctype == POLYGON)
+    for (int i = 0; i < moveable_objects.size(); i++)
     {
-        auto acol = (const Polygon&) *oa.pcollider;
-        auto bcol = (const Polygon&) *ob.pcollider;
-
-        phys_t best_comp = 1; // negative comp with smallest magnitude
-        int best_support;
-        for (unsigned int i = 0; i < acol.n_vertices(); i++)
+        for (int k = i + 1; k < moveable_objects.size(); k++)
         {
-            static phys_t comp;
-            const Vec2& normal = acol.normal_at(i);
-            int support = bcol.get_support(-normal); 
-            // printf("%f, %f\n", temp.x, temp.y);
-            comp = normal.dot((bcol.vertex_at(support) + ob.tf.position) -
-                (acol.vertex_at(i) + oa.tf.position));
+            int t;
+            Manifold man;
+            objptr oa = moveable_objects[i];
+            objptr ob = moveable_objects[k];
+            real pen = polygon2polygon(*oa, *ob, man);
 
-            if (comp > 1e-7)
+            if (man.count != 0)
             {
-                return false;
-            }
-            if (comp < best_comp)
-            {
-                best_comp = comp;
-                best_support = support;
+            assert(pen >= 0);
+                real mass_inv_a = oa->get_mass_inv();
+                real mass_inv_b = ob->get_mass_inv();
+                real inertia_inv_a = oa->get_inertia_inv();
+                real inertia_inv_b = ob->get_inertia_inv();
+
+                real r = fmin(oa->material.restitution, ob->material.restitution);
+
+                for (int i = 0; i < man.count; i++)
+                {
+                    Vec2 contact_pt = man.contact_pts[i];
+                    Vec2 pivot_a = contact_pt - oa->tf.position;
+                    Vec2 pivot_b = contact_pt - ob->tf.position;
+                    Vec2 rel_v = ob->velocity + angular2tangential(pivot_b, ob->ang_velocity) -
+                                 oa->velocity - angular2tangential(pivot_a, oa->ang_velocity);
+                    real rel_v_normal = rel_v.dot(man.normal);
+                    if (rel_v_normal > 0)
+                        return;
+                    real denom = pow(determinant(pivot_a, man.normal), 2) * inertia_inv_a +
+                                 pow(determinant(pivot_b, man.normal), 2) * inertia_inv_b +
+                                 mass_inv_a + mass_inv_b;
+                    real bias_vel = BIAS_FACTOR / dt * fmax(0, pen - BIAS_SLOP);
+                    if (rel_v_normal < 0.f) bias_vel = -bias_vel;
+                    real j = (-(1 + r) * (rel_v_normal + bias_vel)) / denom / man.count;
+                    Vec2 impulse = j * man.normal;
+                    oa->apply_impulse(-impulse, pivot_a);
+                    ob->apply_impulse(impulse, pivot_b);
+
+                    // FRICTION
+                    // rel_v = ob->velocity - oa->velocity;
+
+                    // // subtract normal component
+                    // Vec2 tangent = rel_v - rel_v.dot(man.normal) * man.normal;
+                    // tangent.normalize();
+
+                    // // magnitude of impulse caused by tangential velocity diff
+                    // real impulse_offset = -rel_v.dot(tangent) / denom / man.count;
+
+                    // // arbitrary approximation of friction between materials
+                    // real mu_static = (oa->material.mu_static + ob->material.mu_static) / 2;
+
+                    // Vec2 friction;
+                    // // j, the normal impulse * mu_static is the tangential static friction impulse
+                    // if (fabs(impulse_offset) < mu_static * j)
+                    // {
+                    //     friction = tangent * impulse_offset; // offset the tangential velocity difference
+                    // }
+                    // else
+                    // {
+                    //     real mu_kinetic = (oa->material.mu_kinetic + ob->material.mu_kinetic) / 2;
+                    //     friction = -tangent * mu_kinetic * j;
+                    // }
+                    // oa->apply_impulse(-friction, pivot_a);
+                    // ob->apply_impulse(friction, pivot_b);
+                }
             }
         }
-        return true;
+    }
+    // TODO handle fixed objects
+}
+
+/*
+Clip a face penetrating another polygon (incident) against a line. The line originates
+from an endpoint of the penetrated face, and is normal to the penetrated face.
+If the incident "exceeds" the line, i.e. hs an endpoint outside the line, it is 
+clipped to be on the line, here:
+            
+            /   <- incident face, exceeding penetrated face
+           /
+          /
+         / 
+    ----/--             <- penetrated face
+       /
+
+          
+          /      <- incident face, now clipped (right endpound changed)
+         / 
+    ----/--             <- penetrated face
+       /
+
+It is possible for both endpoints of the incident face to be clipped due to
+numerical errors, in which case, false is returned to indicate this. 
+ */
+bool ng2::clip_face(Vec2 inc_face[2], const Vec2 &ref_point, const Vec2 &normal)
+{
+    Vec2 dir1 = inc_face[0] - ref_point;
+    Vec2 dir2 = inc_face[1] - ref_point;
+    real dot1 = dir1.dot(normal);
+    real dot2 = dir2.dot(normal);
+    Vec2 out[2];
+    int8_t count = 0;
+
+    // don't need to clip
+    if (dot1 >= 0)
+        out[count++] = inc_face[0];
+    if (dot2 >= 0)
+        out[count++] = inc_face[1];
+
+    // gotta clip
+    if (dot1 * dot2 < 0)
+    {
+        assert(count != 2);
+        out[count++] = inc_face[0] + dot1 / (dot1 - dot2) * (inc_face[1] - inc_face[0]);
+    }
+    assert(count != 3);
+    inc_face[0] = out[0];
+    inc_face[1] = out[1];
+    return count >= 2;
+}
+
+void ng2::find_incident_face(const Vec2 &ref_normal, ppoly inc_poly, Vec2 out_face[2])
+{
+
+    // get index of incident normal that is most opposite in direction to
+    // ref_normal
+    std::vector<Vec2>::const_iterator inc_it = std::min_element(inc_poly->normal_begin(),
+                                                                inc_poly->normal_end(), [ref_normal](const Vec2 &n1, const Vec2 &n2) {
+                                                                    return ref_normal.dot(n1) < ref_normal.dot(n2);
+                                                                });
+
+    int index = std::distance(inc_poly->normal_begin(), inc_it);
+    out_face[0] = inc_poly->vertex_at(index);
+    out_face[1] = inc_poly->vertex_at((index + 1) % inc_poly->n_vertices());
+}
+
+/*
+Procedure:
+1)  Find penetrations using separating axis theorm
+2)  Decide incident and reference polygons
+3)  Find the two incident faces in the incident polygon
+4)  Clip (i.e. find intersection with if there exists) the incident face against the side planes
+    of the reference face.
+5)  For the clipped points (intersection or original), if it has a positive penetration, count it
+    as a penetrating point. Take average penetration of penetrating points as the final penetration
+    and the normal of the reference face as the penetration normal
+*/
+ng2::real ng2::polygon2polygon(const Object &oa, const Object &ob, Manifold &man)
+{
+    man.count = 0;
+    man.penetration = 0;
+    // step 1
+    int idx_a;
+    real pen_a = objects_collide(oa, ob, idx_a);
+    if (pen_a < 0)
+        return -1;
+
+    int idx_b;
+    real pen_b = objects_collide(ob, oa, idx_b);
+    if (pen_b < 0)
+        return -1;
+    // step 2
+    std::shared_ptr<Polygon> ref_poly;
+    std::shared_ptr<Polygon> inc_poly;
+    Vec2 ref_pos;
+    Vec2 inc_pos;
+    int ref_idx; // index of the reference face
+
+    real pen_diff = pen_a - pen_b;
+    real pen_eps = pen_a * 0.07;
+    bool flipped; // by default, assume a is reference
+    // if (((Polygon &)(*ob.pcollider)).n_vertices() == 4)
+    // {
+    //     printf("HA!\n");
+    // }
+
+    // if penetration difference is not sufficiently large, prefer the
+    // polygon on top to be reference for improved coherence
+    // (I actually have no idea if it has to be this convoluted)
+    if (fabs(pen_diff) < pen_eps)
+    {
+        real y_diff = oa.tf.position.y - ob.tf.position.y;
+        if (fabs(y_diff) < Y_EPSILON)
+        {
+            // tiebreaker. If a is to the left of b, then a is ref
+            flipped = oa.tf.position.x < ob.tf.position.x;
+        }
+        else
+        {
+            flipped = y_diff < 0;
+        }
+    }
+    else
+    {
+        flipped = pen_diff < 0;
+    }
+
+    if (flipped)
+    {
+        ref_poly = std::dynamic_pointer_cast<Polygon>(oa.pcollider);
+        inc_poly = std::dynamic_pointer_cast<Polygon>(ob.pcollider);
+        ref_pos = oa.tf.position;
+        inc_pos = ob.tf.position;
+        ref_idx = idx_a;
+    }
+    else
+    {
+        ref_poly = std::dynamic_pointer_cast<Polygon>(ob.pcollider);
+        inc_poly = std::dynamic_pointer_cast<Polygon>(oa.pcollider);
+        ref_pos = ob.tf.position;
+        inc_pos = oa.tf.position;
+        ref_idx = idx_b;
+    }
+
+    // step 3
+    Vec2 inc_face[2];
+    find_incident_face(ref_poly->normal_at(ref_idx), inc_poly, inc_face);
+    inc_face[0] += inc_pos;
+    inc_face[1] += inc_pos;
+
+    // step 4
+    Vec2 ref_p = ref_poly->vertex_at(ref_idx) + ref_pos;
+    Vec2 ref_q = ref_poly->vertex_at((ref_idx + 1) % ref_poly->n_vertices()) + ref_pos;
+    Vec2 ref_face[2]{ref_p, ref_q};
+    Vec2 pq = (ref_q - ref_p);
+    pq.normalize();
+
+    if (!clip_face(inc_face, ref_p, pq))
+        return -1;
+    if (!clip_face(inc_face, ref_q, -pq))
+        return -1;
+
+    // step 5
+    // the normal should be from a to b
+    Vec2 ref_normal = ref_poly->normal_at(ref_idx).normalized();
+    man.normal = flipped ? ref_normal : -ref_normal;
+    real penetration_sum = 0.f;
+    for (uint8_t i = 0; i <= 1; i++)
+    {
+        real pen = ref_normal.dot(inc_face[i] - ref_p);
+        if (pen <= 0.f)
+        {
+            man.contact_pts[man.count++] = inc_face[i];
+            man.penetration -= pen;
+        }
+    }
+    if (man.count == 0)
+    {
+        printf("REEEEE NUMERICAL ISSUES\n");
+        man.penetration = 0;
+        return 0;
+    }
+    man.penetration /= man.count;
+    return fmin(pen_a, pen_b);
+}
+
+ng2::real ng2::objects_collide(const ng2::Object &oa, const ng2::Object &ob, int &face_idx)
+{
+    if (oa.pcollider->ctype == ng2::POLYGON && ob.pcollider->ctype == ng2::POLYGON)
+    {
+        auto acol = (const ng2::Polygon &)*oa.pcollider;
+        auto bcol = (const ng2::Polygon &)*ob.pcollider;
+
+        ng2::real best_comp = -INFINITY;
+        // iterate over a's faces
+        for (unsigned int i = 0; i < acol.n_vertices(); i++)
+        {
+            static ng2::real comp;
+            const ng2::Vec2 &normal = acol.normal_at(i);
+            // get vertex of b that is farthest along negative normal of a
+            int support = bcol.get_support(-normal);
+            // compute penetration
+            comp = normal.dot((bcol.vertex_at(support) + ob.tf.position) -
+                              (acol.vertex_at(i) + oa.tf.position));
+
+            // TODO maybe there's a safer way to do this?
+            if (comp > 1e-7)
+            {
+                return -1;
+            }
+            if (comp > best_comp)
+            {
+                best_comp = comp;
+                face_idx = i;
+            }
+        }
+        assert(best_comp < 0);
+        return -best_comp;
     }
     else
     {
         std::cerr << "Collider Types currently not supported." << std::endl;
-        return false;
-    }
-}
-
-void ng2::resolve_collision(const ColState &state)
-{
-    // Vec2 n = m.normal;
-    // phys_t e = std::min(m.a.material.restitution, m.b.material.restitution);
-    // phys_t rel_v = (m.b.velocity - m.a.velocity).dot(n);
-    // if (rel_v > 0)
-    //     return; // a and b are already moving apart
-    // phys_t j = -(1 + e) * ((m.b.velocity - m.a.velocity).dot(n)) /
-    //            (m.a.mass_inv + m.b.mass_inv); // solve for impulse scalar
-    // Vec2 impulse = n * j;
-    // m.a.velocity -= impulse * m.a.mass_inv;
-    // m.b.velocity += impulse * m.b.mass_inv;
-}
-
-void ng2::positional_correction(ColState& state)
-{
-    // if ((m.penetration -= POS_CORRECTION_SLOP) > 0)
-    // {
-    //     Vec2 corr = m.penetration / (m.a.mass_inv + m.b.mass_inv) *
-    //                 POS_CORRECTION_RATIO * m.normal;
-    //     m.a.tf.position += m.a.mass_inv * corr;
-    //     m.b.tf.position += m.b.mass_inv * corr;
-    // }
-}
-
-void ng2::generate_pairs(const std::list<objptr> &bodies, std::list<objp_pair> &pairs)
-{
-    pairs.clear();
-
-    for (auto i = bodies.begin(); i != bodies.end(); i++)
-    {
-        auto j = i;
-        for (++j; j != bodies.end(); j++)
-        {
-            // not in same layer
-            if (!((*i)->layers & (*j)->layers))
-                continue;
-
-            // now i and j both have updated bounding boxes
-
-            // TODO modify condition
-            if (true)
-                pairs.emplace_back(*i, *j);
-        }
+        return -1;
     }
 }

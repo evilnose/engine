@@ -17,13 +17,14 @@ typedef std::shared_ptr<Collider> colptr;
 struct Transform
 {
   Vec2 position;
-  phys_t ang_position;
+  real ang_position;
 };
 
 class Object
 {
 public:
-  Object(id_t id, colptr pcollider, const Material &mat, phys_t mass = 1.f, int layers = 1, phys_t grav_scale = 1.f);
+  Object(id_t id, colptr pcollider, const Material &mat, real mass = 1.f,
+          int layers = 1, real grav_scale = 1.f, bool movable = true);
   ~Object();
 
   const id_t id;
@@ -31,29 +32,34 @@ public:
   // properties
   colptr pcollider; // TODO should be const once generic collider are done
   const Material &material;
-  phys_t grav_scale; // 1.0 for normal gravity
+  real grav_scale; // 1.0 for normal gravity
   int layers;
-  const phys_t &mass = _mass;
-  const phys_t &mass_inv = _mass_inv;
+  bool movable;
 
   // states
   Transform tf;
   Vec2 velocity;
   Vec2 force;
-  phys_t ang_velocity;
+  real ang_velocity;
 
   // apply to object an impulse j, changing it velocity
-  void apply_impulse(Vec2 j);
+  void apply_impulse(Vec2 j, Vec2 contact);
 
   // void apply_torque();
 
   void update_collider();
 
-  void set_mass(phys_t value);
+  real get_mass();
+  real get_mass_inv();
+  real get_inertia();
+  real get_inertia_inv();
+  void set_mass(real value);
 
 private:
-  phys_t _mass;
-  phys_t _mass_inv;
+  real mass;
+  real _mass_inv;
+  real inertia;
+  real _inertia_inv;
 };
 
 // struct Collider {
@@ -62,25 +68,25 @@ private:
 
 // struct AABB : public Collider
 // {
-//     AABB(phys_t w, phys_t h);
-//     phys_t width;
-//     phys_t height;
+//     AABB(real w, real h);
+//     real width;
+//     real height;
 //     Vec2 min;
 //     Vec2 max;
 // };
 
 // struct CircleCollider : public Collider
 // {
-//     CircleCollider(phys_t r);
-//     phys_t r; // radius
+//     CircleCollider(real r);
+//     real r; // radius
 // };
 
 struct Manifold
 {
-  Object &a;
-  Object &b;
-  phys_t penetration;
+  real penetration;
   Vec2 normal;
+  Vec2 contact_pts[2];
+  uint8_t count;
 };
 } // namespace ng2
 

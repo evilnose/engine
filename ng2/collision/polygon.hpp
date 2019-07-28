@@ -3,6 +3,7 @@
 
 #include "../collision/collider.hpp"
 #include <vector>
+#include <iterator>
 
 namespace ng2
 {
@@ -10,13 +11,17 @@ namespace ng2
     {
         public:
             // TODO replace vectors with hidden unique_ptr arrays
-            Polygon(const std::vector<Vec2>& vertices, bool sorted_clockwise=false, phys_t angular_pos=0.f);
+            Polygon(const std::vector<Vec2>& vertices, bool sorted_clockwise=false, real angular_pos=0.f);
 
-            virtual void update_collider(phys_t new_ang) override;
+            virtual void update_collider(real new_ang) override;
 
             unsigned int n_vertices() const;
 
             const Vec2& vertex_at(unsigned int index) const;
+
+            std::vector<Vec2>::const_iterator normal_begin() const;
+
+            std::vector<Vec2>::const_iterator normal_end() const;
 
             const Vec2& normal_at(unsigned int index) const;
 
@@ -34,7 +39,7 @@ namespace ng2
             std::vector<Vec2> rotated_vertices;
 
             std::vector<Vec2> rotated_normals;
-            phys_t angular_pos;
+            real angular_pos;
 
             void sort_vertices(std::vector<Vec2>& vertices);
     };

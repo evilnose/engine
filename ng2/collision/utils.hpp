@@ -6,7 +6,7 @@
 namespace ng2
 {
 // currently unused
-// sf::Vector2f vec2ToVector2f(const Vec2& u, phys_t scale=1.f);
+// sf::Vector2f vec2ToVector2f(const Vec2& u, real scale=1.f);
 
 template <class T>
 struct ID
