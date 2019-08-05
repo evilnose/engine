@@ -14,8 +14,8 @@ class BasicRoutine : public Routine
     BasicRoutine(World& world, real width, real height, Vec2 scale);
     // note that size should be {width, height}
     // TODO add variadic overload
-    ng2::objptr add_polygon(const std::vector<Vec2>& points,
-      Vec2 init_pos=Vec2{0.f, 0.f}, real init_angpos=0, bool sorted_clockwise=false);
+    ng2::objptr add_polygon(const std::vector<Vec2>& points, Vec2 init_pos=Vec2{0.f, 0.f},
+      real init_angpos=0, bool fixed=false, bool sorted_clockwise=false);
     void generate_polygon(const Vec2& init_pos);
     void add_circle(real r, Vec2 init_pos = Vec2{0.f, 0.f}, Vec2 init_vel = Vec2{0.f, 0.f});
 

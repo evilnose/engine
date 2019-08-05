@@ -30,10 +30,10 @@ ng2::BasicRoutine::BasicRoutine(World &wd, real w, real h, Vec2 s) : Routine(wd)
 // }
 
 ng2::objptr ng2::BasicRoutine::add_polygon(
-    const std::vector<Vec2> &points, Vec2 init_pos, real init_angpos, bool sorted_clockwise)
+    const std::vector<Vec2> &points, Vec2 init_pos, real init_angpos, bool fixed, bool sorted_clockwise)
 {
     std::shared_ptr<Polygon> pcol(new Polygon(points, sorted_clockwise, init_angpos));
-    ng2::objptr pobj(new Object(last_id++, pcol, mat::ROCK));
+    ng2::objptr pobj(new Object(last_id++, pcol, mat::ROCK, 1.f, !fixed));
     pobj->tf.position = init_pos;
     pobj->tf.ang_position = init_angpos;
     pobj->velocity = ng2::Vec2{0.f, 0.f};

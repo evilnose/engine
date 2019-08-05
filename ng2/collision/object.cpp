@@ -4,12 +4,18 @@
 #include <iostream>
 
 ng2::Object::Object(id_t id, colptr col, const Material &mat, real m,
-        int lyrs, real gscale, bool movable_) : 
+        bool movable_, int lyrs, real gscale) : 
     id(id), pcollider(col), material(mat), layers(lyrs), grav_scale(gscale),
     movable(movable_)
                                                                                 
 {
-    set_mass(m);
+    if (movable)
+    {
+        set_mass(m);
+    } else
+    {
+        set_mass(INFINITY);
+    }
 }
 
 ng2::Object::~Object()
@@ -17,22 +23,22 @@ ng2::Object::~Object()
     // delete collider;
 }
 
-ng2::real ng2::Object::get_mass()
+ng2::real ng2::Object::get_mass() const
 {
     return mass;
 }
 
-ng2::real ng2::Object::get_mass_inv()
+ng2::real ng2::Object::get_mass_inv() const
 {
     return _mass_inv;
 }
 
-ng2::real ng2::Object::get_inertia()
+ng2::real ng2::Object::get_inertia() const
 {
     return inertia;
 }
 
-ng2::real ng2::Object::get_inertia_inv()
+ng2::real ng2::Object::get_inertia_inv() const
 {
     return _inertia_inv;
 }

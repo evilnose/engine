@@ -20,13 +20,33 @@ struct ColState
     int a_sides[2]; // sides of a closest to b_verts
     real pen[2];  // penetration distances
 };
+
+struct Manifold
+{
+  Object& oa;
+  Object& ob; // NOTE this could be a fixed object
+  real penetration;
+  Vec2 normal;
+  Vec2 contact_pts[2];
+  uint8_t count;
+
+  // INTERMEDIATE VALUES
+  real r; // restitution;
+  real mu_static;
+  real mu_kinetic;
+
+  bool init();
+};
+
 // bool AABBvAABB(Manifold &m);
 // bool CirclevCircle(Manifold &m);
 
-void resolve_collisions(std::vector<objptr>& moveable_objects,
-        std::vector<objptr>& fixed_objects, real dt);
+void resolve_collision(const Manifold& man, real dt);
 
-real polygon2polygon(const Object& oa, const Object& ob, Manifold& man);
+void resolve_collisions(std::vector<objptr>& movable_objects, std::vector<objptr>& fixed_objects,
+  real dt);
+
+void polygon2polygon(Manifold& man);
 
 /*
 Detect points in b that penetrate a's faces. This should be

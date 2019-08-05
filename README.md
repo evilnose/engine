@@ -14,3 +14,6 @@ look into `main/routines` on implmenting the routine interface.
 ## SFML on windows
 For some reason, when using SFML on windows, you need to have the SFML dlls in the same folder as the executable. To do that,
 copy all the files from `SFML/bin` and paste them into `bin` in the working directory.
+
+## TODOs
+* Implement this: https://gamedev.stackexchange.com/questions/114925/in-a-2d-physics-engine-how-do-i-avoid-useless-collision-resolutions-when-object

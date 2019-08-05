@@ -24,7 +24,7 @@ class Object
 {
 public:
   Object(id_t id, colptr pcollider, const Material &mat, real mass = 1.f,
-          int layers = 1, real grav_scale = 1.f, bool movable = true);
+          bool movable_ = true, int layers = 1, real grav_scale = 1.f);
   ~Object();
 
   const id_t id;
@@ -49,10 +49,10 @@ public:
 
   void update_collider();
 
-  real get_mass();
-  real get_mass_inv();
-  real get_inertia();
-  real get_inertia_inv();
+  real get_mass() const;
+  real get_mass_inv() const;
+  real get_inertia() const;
+  real get_inertia_inv() const;
   void set_mass(real value);
 
 private:
@@ -80,14 +80,6 @@ private:
 //     CircleCollider(real r);
 //     real r; // radius
 // };
-
-struct Manifold
-{
-  real penetration;
-  Vec2 normal;
-  Vec2 contact_pts[2];
-  uint8_t count;
-};
 } // namespace ng2
 
 #endif

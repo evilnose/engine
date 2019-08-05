@@ -1,5 +1,6 @@
 #include "math2d.hpp"
 #include <cmath>
+#include <cassert>
 
 ng2::Vec2::Vec2(const Vec2& u)
 {
@@ -85,6 +86,7 @@ ng2::real ng2::Vec2::len_sq() const
 void ng2::Vec2::normalize()
 {
     real norm = len();
+    assert(norm != 0);
     x /= norm;
     y /= norm;
 }
