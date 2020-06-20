@@ -1,8 +1,8 @@
 #include <iostream>
-#include "basicRoutine.hpp"
-#include "../../ng2/collision/polygon.hpp"
-#include "../../ng2/collision/math2d.hpp"
-// #include "../../ng2/collision/material.hpp"
+#include "basicRoutine.h"
+#include "../../ng2/collision/polygon.h"
+#include "../../ng2/collision/math2d.h"
+// #include "../../ng2/collision/material.h"
 
 #define FRAMERATE 60
 

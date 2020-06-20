@@ -1,8 +1,7 @@
-#ifndef NG2_WORLD_HPP
-#define NG2_WORLD_HPP
+#pragma once
 
 #include <vector>
-#include "../collision/object.hpp"
+#include "../collision/object.h"
 
 namespace ng2
 {
@@ -29,4 +28,4 @@ class World
 };
 } // namespace ng2
 
-#endif
+

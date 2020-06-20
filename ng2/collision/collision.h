@@ -1,8 +1,7 @@
-#ifndef NG2_COLLISION_HPP
-#define NG2_COLLISION_HPP
+#pragma once
 
-#include "object.hpp"
-#include "polygon.hpp"
+#include "object.h"
+#include "polygon.h"
 #include <vector>
 
 namespace ng2
@@ -21,31 +20,55 @@ struct ColState
     real pen[2];  // penetration distances
 };
 
+// populated before collision resolution; only used
+// in Manifold struct
+struct ContactData {
+  Vec2 point;  // initialized during polygon2polygon, etc.
+  Vec2 pivot_a;  // initialized during init();
+  Vec2 pivot_b; 
+  // specialized denominator value used during impulse computation.
+  real denom;  // initialized during init()
+};
+
+// NOTE only Manifold.ob could be a fixed object
 struct Manifold
 {
-  Object& oa;
-  Object& ob; // NOTE this could be a fixed object
-  real penetration;
-  Vec2 normal;
-  Vec2 contact_pts[2];
-  uint8_t count;
+  Object& oa;  // must be set when Manifold is first constructed
+  Object& ob;  // NOTE this could be a fixed object
 
-  // INTERMEDIATE VALUES
   real r; // restitution;
   real mu_static;
   real mu_kinetic;
 
-  bool init();
+  real penetration;  // same as point (above)
+  Vec2 normal;  // same as (above) point
+  uint8_t count;  // number of contact points (1-2); initialized same time as point
+
+  // Intermediate values stored/modified during computation
+  ContactData contact_data[2];
+
+  // The accumulated impulse (from the collision resolution trials). This is 
+  // read from and changed over iterations of impulse resolution.
+  real accum_j;
+
+  // initialize frictional constants (r, mu_*)
+  void init_frictional();
+
+  // compute contact data. This is done after
+  // penetration, normal, and count are set
+  void init_contact_data();
 };
 
 // bool AABBvAABB(Manifold &m);
 // bool CirclevCircle(Manifold &m);
 
-void resolve_collision(const Manifold& man, real dt);
+// manifolds is an output parameter, to which we push the constructed manifolds
+void resolve_all_collisions(std::vector<objptr>& movable_objects, std::vector<objptr>& fixed_objects,
+  real dt, std::vector<Manifold>& manifolds);
 
-void resolve_collisions(std::vector<objptr>& movable_objects, std::vector<objptr>& fixed_objects,
-  real dt);
+void positional_correction(Manifold& man);
 
+// TODO this could all be made private, probably
 void polygon2polygon(Manifold& man);
 
 /*
@@ -73,4 +96,4 @@ bool clip_face(Vec2 inc_face[2], const Vec2& ref_point, const Vec2& normal);
 
 } // namespace ng2
 
-#endif
+

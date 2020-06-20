@@ -1,7 +1,6 @@
-#ifndef NG2_MATERIAL_HPP
-#define NG2_MATERIAL_HPP
+#pragma once
 
-#include "math2d.hpp"
+#include "math2d.h"
 
 namespace ng2
 {
@@ -23,4 +22,3 @@ static const Material PILLOW{0.1, 0.2, 0.3, 0.3};
 } // namespace mat
 } // namespace ng2
 
-#endif

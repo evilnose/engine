@@ -1,7 +1,7 @@
 #include <iostream>
-//#include "../ng2/interface/world.hpp"
-#include "../ng2/interface/timestepper.hpp"
-#include "routines/basicRoutine.hpp"
+//#include "../ng2/interface/world.h"
+#include "../ng2/interface/timestepper.h"
+#include "routines/basicRoutine.h"
 
 int main()
 {

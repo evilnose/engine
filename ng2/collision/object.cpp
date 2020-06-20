@@ -1,5 +1,5 @@
-#include "object.hpp"
-#include "polygon.hpp"
+#include "object.h"
+#include "polygon.h"
 #include <cmath>
 #include <iostream>
 
@@ -76,6 +76,7 @@ void ng2::Object::set_mass(real value)
     }    
 }
 
+#include <cmath>
 void ng2::Object::apply_impulse(Vec2 j, Vec2 contact)
 {
     velocity += j * _mass_inv;

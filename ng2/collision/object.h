@@ -1,13 +1,12 @@
-#ifndef NG2_OBJECT_HPP
-#define NG2_OBJECT_HPP
+#pragma once
 
 #include <stdexcept>
 #include <memory>
 
-#include "math2d.hpp"
-#include "state.hpp"
-#include "material.hpp"
-#include "collider.hpp"
+#include "math2d.h"
+#include "state.h"
+#include "material.h"
+#include "collider.h"
 
 namespace ng2
 {
@@ -82,4 +81,4 @@ private:
 // };
 } // namespace ng2
 
-#endif
+

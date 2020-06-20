@@ -1,4 +1,4 @@
-#include "math2d.hpp"
+#include "math2d.h"
 #include <cmath>
 #include <cassert>
 

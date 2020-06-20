@@ -1,7 +1,6 @@
-#ifndef NG2_TIMESTEPPER_HPP
-#define NG2_TIMESTEPPER_HPP
+#pragma once
 
-#include "routines.hpp"
+#include "routines.h"
 
 namespace ng2
 {
@@ -22,4 +21,3 @@ class TimeStepper
     bool in_loop;
 };
 } // namespace ng2
-#endif

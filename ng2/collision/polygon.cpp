@@ -1,8 +1,8 @@
 #include <cmath>
 #include <cassert>
 #include <map>
-#include "polygon.hpp"
-#include "../collision/utils.hpp"
+#include "polygon.h"
+#include "../collision/utils.h"
 
 typedef ng2::ID<ng2::Vec2> VecID;
 
@@ -66,7 +66,7 @@ ng2::Polygon::Polygon(const std::vector<Vec2> &vert, bool sorted_cw, float angpo
     update_collider(angpos);
 }
 
-unsigned int ng2::Polygon::n_vertices() const
+int ng2::Polygon::n_vertices() const
 {
     return rotated_vertices.size();
 }

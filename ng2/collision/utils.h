@@ -1,8 +1,9 @@
-// #include <SFML/Graphics.hpp>
-#include "math2d.hpp"
+#pragma once
 
-#ifndef NG2_UTILS_HPP
-#define NG2_UTILS_HPP
+// #include <SFML/Graphics.hpp>
+#include "math2d.h"
+
+
 namespace ng2
 {
 // currently unused
@@ -31,4 +32,3 @@ struct IDComp
     }
 };
 } // namespace ng2
-#endif

@@ -1,5 +1,4 @@
-#ifndef NG2_STATE_H
-#define NG2_STATE_H
+#pragma once
 
 namespace ng2
 {
@@ -7,4 +6,4 @@ namespace ng2
     static id_t last_rb_id = 0;
 }
 
-#endif
+

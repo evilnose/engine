@@ -64,6 +64,10 @@
         "cctype": "cpp",
         "clocale": "cpp",
         "cwctype": "cpp",
-        "optional": "cpp"
-    }
+        "optional": "cpp",
+        "atomic": "cpp",
+        "cstdarg": "cpp",
+        "memory_resource": "cpp"
+    },
+    "cmake.configureOnOpen": true
 }

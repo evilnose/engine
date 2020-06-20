@@ -1,5 +1,5 @@
-#include "timestepper.hpp"
-#include "../utils/timer.hpp"
+#include "timestepper.h"
+#include "../utils/timer.h"
 #include <ctime>
 
 ng2::TimeStepper::TimeStepper(Routine& r, int fr, float ac) : routine(r), framerate(fr), dt(1.f / fr), acum_cap(ac)

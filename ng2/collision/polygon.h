@@ -1,7 +1,6 @@
-#ifndef NG2_POLYGON_HPP
-#define NG2_POLYGON_HPP
+#pragma once
 
-#include "../collision/collider.hpp"
+#include "../collision/collider.h"
 #include <vector>
 #include <iterator>
 
@@ -15,7 +14,7 @@ namespace ng2
 
             virtual void update_collider(real new_ang) override;
 
-            unsigned int n_vertices() const;
+            int n_vertices() const;
 
             const Vec2& vertex_at(unsigned int index) const;
 
@@ -45,4 +44,3 @@ namespace ng2
     };
 }
 
-#endif

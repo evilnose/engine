@@ -1,10 +1,9 @@
-#ifndef NG2_AXISALIGNED_HPP
-#define NG2_AXISALIGNED_HPP
+#pragma once
 
 #include <memory>
 #include <SFML/Graphics.hpp>
-#include "../../ng2/interface/routines.hpp"
-#include "../../ng2/collision/math2d.hpp"
+#include "../../ng2/interface/routines.h"
+#include "../../ng2/collision/math2d.h"
 
 namespace ng2
 {
@@ -52,4 +51,3 @@ class BasicRoutine : public Routine
     sf::Vector2f vec2ToVector2f(const Vec2& vec) const;
 };
 } // namespace ng2
-#endif

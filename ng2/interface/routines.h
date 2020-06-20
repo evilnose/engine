@@ -1,7 +1,6 @@
-#ifndef NG2_ROUTINES_HPP
-#define NG2_ROUTINES_HPP
+#pragma once
 
-#include "world.hpp"
+#include "world.h"
 
 namespace ng2
 {
@@ -30,4 +29,3 @@ class Routine
 };
 } // namespace ng2
 
-#endif

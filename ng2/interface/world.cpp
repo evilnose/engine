@@ -1,5 +1,5 @@
-#include "world.hpp"
-#include "../collision/collision.hpp"
+#include "world.h"
+#include "../collision/collision.h"
 #include <ctime>
 #include <algorithm>
 
@@ -24,31 +24,23 @@ void ng2::World::step(real dt)
 {
     dt *= time_scale;
     // TODO this bad boy can fit so much parallelization in it
-    resolve_collisions(moveable_objects, fixed_objects, dt);
+    std::vector<Manifold> manifolds;
+    resolve_all_collisions(moveable_objects, fixed_objects, dt, manifolds);
 
     // update velocity
-    for (auto &obj : moveable_objects)
+    for (auto op : moveable_objects)
     {
-        obj->velocity += (obj->force * obj->get_mass_inv() + grav_accel * obj->grav_scale) * dt;
-        obj->tf.position += obj->velocity * dt;
+        op->velocity += (op->force * op->get_mass_inv() + grav_accel * op->grav_scale) * dt;
+        op->tf.position += op->velocity * dt;
 
-        obj->tf.ang_position += obj->ang_velocity * dt;
-        obj->pcollider->update_collider(obj->tf.ang_position);
+        op->tf.ang_position += op->ang_velocity * dt;
+        op->pcollider->update_collider(op->tf.ang_position);
         // printf("%f, %f\n", obj.tf.position.x, obj.tf.position.y);
     }
 
-    /*
-    std::list<objp_pair> pairs;
-    generate_pairs(moveable_objects, pairs);
-
-    for (auto const &pair : pairs)
-    {
-        // ColState state = detect_collision(*pair.first, *pair.second);
-        // bool colliding = detect_collision(*pair.first, *pair.second) || detect_collision(*pair.second, *pair.first);
-        // resolve_collision(m);
-        // positional_correction(m);
+    for (Manifold& man : manifolds) {
+        positional_correction(man);
     }
-    */
 }
 
 void ng2::World::set_global_gravity(real val)

@@ -1,5 +1,4 @@
-#ifndef NG2_MATH2D_HPP
-#define NG2_MATH2D_HPP
+#pragma once
 
 #include <algorithm>
 
@@ -43,4 +42,3 @@ T clip(const T& n, const T& lower, const T& upper) {
 }
 } // namespace ng2
 
-#endif

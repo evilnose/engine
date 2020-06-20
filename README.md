@@ -2,7 +2,7 @@
 
 ## Building
 * Create directory `bin` for built executables
-* Install SFML. If you have windows, you might need to copy some SFML `.dll` files to `bin`. See below for more info 
+* Install SFML-2.5.1. If you have windows, you might need to copy some SFML `.dll` files to `bin`. See below for more info 
 * `mkdir build && cd build`. Then run `cmake ..` and then `make`. When you run `cmake` for the first time, you might need to configure additional arguments
 
 

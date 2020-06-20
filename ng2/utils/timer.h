@@ -1,5 +1,4 @@
-#ifndef NG2_TIMER_HPP
-#define NG2_TIMER_HPP
+#pragma once
 
 #include <iostream>
 #include <chrono>
@@ -24,4 +23,3 @@ class Timer
 };
 } // namespace ng2
 
-#endif

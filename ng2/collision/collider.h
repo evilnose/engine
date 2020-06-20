@@ -1,7 +1,6 @@
-#ifndef NG2_COLLIDER_HPP
-#define NG2_COLLIDER_HPP
+#pragma once
 
-#include "math2d.hpp"
+#include "math2d.h"
 
 namespace ng2
 {
@@ -19,4 +18,3 @@ class Collider
 };
 } // namespace ng2
 
-#endif

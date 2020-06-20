@@ -4,31 +4,88 @@
 #include <algorithm>
 #include <iostream>
 #include <cassert>
-#include "math2d.hpp"
-#include "collision.hpp"
-#include "polygon.hpp"
+
+#include "math2d.h"
+#include "collision.h"
+#include "polygon.h"
 
 static constexpr ng2::real POS_CORRECTION_RATIO = 0.2;
 static constexpr ng2::real POS_CORRECTION_SLOP = 0.01;
 static constexpr ng2::real Y_EPSILON = 0.005; // completely arbitrary
-static constexpr ng2::real BIAS_FACTOR = 0.3;
+static constexpr ng2::real BIAS_FACTOR = 0.1;
 static constexpr ng2::real BIAS_SLOP = 0.05;
-static constexpr int K_ITERATIONS = 1;
+static constexpr int K_ITERATIONS = 5;
 
-bool ng2::Manifold::init()
+void ng2::Manifold::init_frictional()
 {
     r = fmin(oa.material.restitution, ob.material.restitution);
     mu_static = (oa.material.mu_static + ob.material.mu_static) / 2;
     mu_kinetic = (oa.material.mu_kinetic + ob.material.mu_kinetic) / 2;
 }
 
-//FUNCTIONS
+void ng2::Manifold::init_contact_data() {
+    // make sure collision detection is done at this point
+    assert(count != 0);
+    for (int i = 0; i < count; i++) {
+        contact_data[i].pivot_a = contact_data[i].point - oa.tf.position;
+        contact_data[i].pivot_b = contact_data[i].point - ob.tf.position;
 
-// NOTE only man.ob could be fixed
-void ng2::resolve_collision(const Manifold &man, real dt)
+        contact_data[i].denom = pow(determinant(contact_data[i].pivot_a, normal), 2) * oa.get_inertia_inv() +
+                        pow(determinant(contact_data[i].pivot_b, normal), 2) * ob.get_inertia_inv() +
+                        oa.get_mass_inv() + ob.get_mass_inv();
+    }
+}
+
+// Private functions
+namespace {
+using namespace ng2;
+
+void apply_friction(Manifold& man, real dt) {
+    for (int i = 0; i < man.count; i++) {
+        Object& oa = man.oa;
+        Object& ob = man.ob;
+        Vec2 rel_v = ob.velocity - oa.velocity;
+
+        ContactData& cdata = man.contact_data[i];
+
+        real mass_inv_a = oa.get_mass_inv();
+        real mass_inv_b = ob.get_mass_inv();
+        real inertia_inv_a = oa.get_inertia_inv();
+        real inertia_inv_b = ob.get_inertia_inv();
+
+        real denom = pow(determinant(cdata.pivot_a, man.normal), 2) * inertia_inv_a +
+                        pow(determinant(cdata.pivot_b, man.normal), 2) * inertia_inv_b +
+                        mass_inv_a + mass_inv_b;
+
+        //friction
+        // subtract normal component
+        Vec2 tangent = rel_v - rel_v.dot(man.normal) * man.normal;
+        if (tangent.len_sq() < 1e-7)
+            return;
+        tangent.normalize();
+
+        // magnitude of impulse caused by tangential velocity diff
+        real impulse_offset = -rel_v.dot(tangent) / denom / man.count;
+
+        Vec2 friction;
+        // j, the normal impulse * mu_static is the tangential static friction impulse
+        if (fabs(impulse_offset) < man.mu_static * man.accum_j)
+        {
+            friction = tangent * impulse_offset; // offset the tangential velocity difference
+        }
+        else
+        {
+            friction = -tangent * man.mu_kinetic * man.accum_j;
+        }
+        oa.apply_impulse(-friction, cdata.pivot_a);
+        ob.apply_impulse(friction, cdata.pivot_b);
+    }
+}
+
+void resolve_collision(Manifold &man, real dt)
 {
-#define oa man.oa
-#define ob man.ob
+    Object& oa = man.oa;
+    Object& ob = man.ob;
     real pen = man.penetration;
     int t;
 
@@ -42,65 +99,48 @@ void ng2::resolve_collision(const Manifold &man, real dt)
 
         for (int i = 0; i < man.count; i++)
         {
-            Vec2 contact_pt = man.contact_pts[i];
-            Vec2 pivot_a = contact_pt - oa.tf.position;
-            Vec2 pivot_b = contact_pt - ob.tf.position;
-            Vec2 rel_v = ob.velocity + angular2tangential(pivot_b, ob.ang_velocity) -
-                         oa.velocity - angular2tangential(pivot_a, oa.ang_velocity);
+            ContactData& cdata = man.contact_data[i];
+            Vec2 contact_pt = cdata.point;
+
+            // velocity of b relative to a
+            Vec2 rel_v = ob.velocity + angular2tangential(cdata.pivot_b, ob.ang_velocity) -
+                         oa.velocity - angular2tangential(cdata.pivot_a, oa.ang_velocity);
             real rel_v_normal = rel_v.dot(man.normal);
-            if (rel_v_normal > 0)
-                return;
-            real denom = pow(determinant(pivot_a, man.normal), 2) * inertia_inv_a +
-                         pow(determinant(pivot_b, man.normal), 2) * inertia_inv_b +
-                         mass_inv_a + mass_inv_b;
-            real bias_vel = BIAS_FACTOR / dt * fmax(0.f, pen - BIAS_SLOP);
+
+            real bias_vel = BIAS_FACTOR / dt * fmin(0.f, pen - BIAS_SLOP);
+            bias_vel = 0;
             if (rel_v_normal < 0.f)
                 bias_vel = -bias_vel;
-            real j = (-(1 + man.r) * (rel_v_normal + bias_vel)) / denom / man.count;
-            Vec2 impulse = j * man.normal;
-            oa.apply_impulse(-impulse, pivot_a);
-            ob.apply_impulse(impulse, pivot_b);
 
-            // FRICTION
-            rel_v = ob.velocity - oa.velocity;
+            real dj = (-(1 + man.r) * (rel_v_normal + bias_vel)) / cdata.denom / man.count;
 
-            // subtract normal component
-            Vec2 tangent = rel_v - rel_v.dot(man.normal) * man.normal;
-            if (tangent.len_sq() < 1e-7)
-                return;
-            tangent.normalize();
+            // Thanks Erin Catto! From https://www.youtube.com/watch?v=SHinxAhv1ZE
+            real old_j = man.accum_j;
+            man.accum_j += dj;
+            man.accum_j = fmax(0, man.accum_j);  // accum. impulse should not be negative
 
-            // magnitude of impulse caused by tangential velocity diff
-            real impulse_offset = -rel_v.dot(tangent) / denom / man.count;
+            // update delta j to account for the changes
+            dj = man.accum_j - old_j;
 
-            Vec2 friction;
-            // j, the normal impulse * mu_static is the tangential static friction impulse
-            if (fabs(impulse_offset) < man.mu_static * j)
-            {
-                friction = tangent * impulse_offset; // offset the tangential velocity difference
-            }
-            else
-            {
-                friction = -tangent * man.mu_kinetic * j;
-            }
-            oa.apply_impulse(-friction, pivot_a);
-            ob.apply_impulse(friction, pivot_b);
+            Vec2 impulse = dj * man.normal;
+            oa.apply_impulse(-impulse, cdata.pivot_a);
+            ob.apply_impulse(impulse, cdata.pivot_b);
         }
     }
-#undef oa
-#undef ob
 }
 
-void ng2::resolve_collisions(std::vector<objptr> &objects, std::vector<objptr> &fixed_objects, real dt)
+}  // namespace
+
+// Public functions
+void ng2::resolve_all_collisions(std::vector<objptr> &objects, std::vector<objptr> &fixed_objects, real dt, std::vector<Manifold>& manifolds)
 {
-    std::vector<Manifold> manifolds;
     // TODO do some broad-phase culling here
     for (int i = 0; i < objects.size(); i++)
     {
         for (int j = i + 1; j < objects.size(); j++)
         {
             Manifold man{*objects[i], *objects[j]};
-            man.init();
+            man.init_frictional();
             polygon2polygon(man);
             if (man.penetration > 0)
             {
@@ -111,7 +151,7 @@ void ng2::resolve_collisions(std::vector<objptr> &objects, std::vector<objptr> &
         for (int j = 0; j < fixed_objects.size(); j++)
         {
             Manifold man{*objects[i], *fixed_objects[j]};
-            man.init();
+            man.init_frictional();
             polygon2polygon(man);
             if (man.penetration > 0)
             {
@@ -122,12 +162,30 @@ void ng2::resolve_collisions(std::vector<objptr> &objects, std::vector<objptr> &
 
     for (int i = 0; i < K_ITERATIONS; i++)
     {
-        for (const Manifold &man : manifolds)
+        for (Manifold &man : manifolds)
         {
             resolve_collision(man, dt);
         }
     }
+
+    // tentative friction
+    for (Manifold &man : manifolds) {
+        apply_friction(man, dt);
+    }
     // TODO handle fixed objects
+}
+
+void ng2::positional_correction(Manifold& man) {
+    real pen = man.penetration - POS_CORRECTION_SLOP;
+    real mass_inv_a = man.oa.get_mass_inv();
+    real mass_inv_b = man.ob.get_mass_inv();
+    if (pen > 0) {
+        Vec2 corr = pen / (mass_inv_a + mass_inv_b) *
+            POS_CORRECTION_RATIO * man.normal;
+
+        man.oa.tf.position -= mass_inv_a * corr;
+        man.ob.tf.position += mass_inv_b * corr;
+    }
 }
 
 /*
@@ -144,7 +202,7 @@ clipped to be on the line, here:
        /
 
           
-          /      <- incident face, now clipped (right endpound changed)
+          /      <- incident face, now clipped (right endpoint changed)
          / 
     ----/--             <- penetrated face
        /
@@ -196,7 +254,7 @@ void ng2::find_incident_face(const Vec2 &ref_normal, ppoly inc_poly, Vec2 out_fa
 
 /*
 Procedure:
-1)  Find penetrations using separating axis theorm
+1)  Find penetrations using separating axis theorem
 2)  Decide incident and reference polygons
 3)  Find the two incident faces in the incident polygon
 4)  Clip (i.e. find intersection with if there exists) the incident face against the side planes
@@ -207,8 +265,8 @@ Procedure:
 */
 void ng2::polygon2polygon(Manifold &man)
 {
-#define oa man.oa
-#define ob man.ob
+    Object& oa = man.oa;
+    Object& ob = man.ob;
     man.penetration = -1; // assume not colliding by default
     // step 1
     int idx_a;
@@ -218,11 +276,9 @@ void ng2::polygon2polygon(Manifold &man)
 
     int idx_b;
     real pen_b = objects_collide(ob, oa, idx_b);
-    if (idx_b > 100) {
-        objects_collide(ob, oa, idx_b);
-    }
     if (pen_b < 0)
         return;
+
     // step 2
     std::shared_ptr<Polygon> ref_poly;
     std::shared_ptr<Polygon> inc_poly;
@@ -300,7 +356,7 @@ void ng2::polygon2polygon(Manifold &man)
         real pen = ref_normal.dot(inc_face[i] - ref_p);
         if (pen <= 0.f)
         {
-            man.contact_pts[man.count++] = inc_face[i];
+            man.contact_data[man.count++].point = inc_face[i];
             man.penetration -= pen;
         }
     }
@@ -310,10 +366,12 @@ void ng2::polygon2polygon(Manifold &man)
         man.penetration = 1;
     }
     man.penetration /= man.count;
-#undef oa
-#undef ob
+
+    man.init_contact_data();
 }
 
+// If colliding, return positive real as penetration, or negative if not colliding.
+// Also face_idx would be updated as the index of the face of oa that is penetrated the farthest.
 ng2::real ng2::objects_collide(const ng2::Object &oa, const ng2::Object &ob, int &face_idx)
 {
     if (oa.pcollider->ctype == ng2::POLYGON && ob.pcollider->ctype == ng2::POLYGON)
@@ -324,7 +382,7 @@ ng2::real ng2::objects_collide(const ng2::Object &oa, const ng2::Object &ob, int
         ng2::real best_comp = -INFINITY;
         ng2::real comp;
         // iterate over a's faces
-        for (unsigned int i = 0; i < acol.n_vertices(); i++)
+        for (int i = 0; i < acol.n_vertices(); i++)
         {
             const ng2::Vec2 &normal = acol.normal_at(i);
             // get vertex of b that is farthest along negative normal of a
